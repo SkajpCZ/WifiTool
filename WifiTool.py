@@ -185,7 +185,7 @@ def StartListen(adapter):
     elif Sava and KillAva: avahi("start")
     elif StartsNM: nm("start");wpa("start")
     else: mm(adapter)
-    print(f"\nGoodbye..")
+    print(f"\nGoodbye..");quit()
 
 def handleSysArgs():
     global outputfile,deauth,Sout,Sdea,Skip,KillAva,KillnmAwpa,Sava,Snmw,StartsNM,interf,AdaSet 
