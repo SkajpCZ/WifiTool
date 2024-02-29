@@ -40,6 +40,7 @@ Link: https://github.com/SkajpCZ/WifiTool
 
 ```bash
 git clone https://github.com/SkajpCZ/WifiTool
+cd WifiTool
 pip install -r requirements.txt
 python3 WifiTool.py -h
 ```
