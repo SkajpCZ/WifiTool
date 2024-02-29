@@ -10,17 +10,18 @@ What this tool does?
     {__about__}
 
 Usage:
-    -w  \033[0;90m|\033[0m --write \033[0;90m<file>\033[0m      Writes to specific file
-    -d  \033[0;90m|\033[0m --deauth            Script will deauthenticate wifis
-    -dd \033[0;90m|\033[0m --dontdeauth        Script will not deauthenticate wifis
-    -s  \033[0;90m|\033[0m --skip              Skips checking part
-    -kA \033[0;90m|\033[0m --kavahi            Kills avahi_daemon \033[0;90m(recommended when in tty only)\033[0m
-    -kN \033[0;90m|\033[0m --knetworkm         Kills NetworkManager and wpa_supplicant services
-    -dN \033[0;90m|\033[0m --dknetworkm        Doesn't kill NetworkManager and wpa_supplicant services
-    -sN \033[0;90m|\033[0m --startnetworkm     Stars NetworkManager and wpa_supplicant services after capturing handshakes
-    -u  \033[0;90m|\033[0m --update            Check for updates
-    -v  \033[0;90m|\033[0m --version           Displays current version of tool
-    -h  \033[0;90m|\033[0m --help              Displays this help menu
+    -w  \033[0;90m|\033[0m --write \033[0;90m<file>\033[0m        Writes to specific file
+    -i  \033[0;90m|\033[0m --interface \033[0;90m<adapter>\033[0m Automatically selects wifi adapter
+    -d  \033[0;90m|\033[0m --deauth              Script will deauthenticate wifis
+    -dd \033[0;90m|\033[0m --dontdeauth          Script will not deauthenticate wifis
+    -s  \033[0;90m|\033[0m --skip                Skips checking part
+    -kA \033[0;90m|\033[0m --kavahi              Kills avahi_daemon \033[0;90m(recommended when in tty only)\033[0m
+    -kN \033[0;90m|\033[0m --knetworkm           Kills NetworkManager and wpa_supplicant services
+    -dN \033[0;90m|\033[0m --dknetworkm          Doesn't kill NetworkManager and wpa_supplicant services
+    -sN \033[0;90m|\033[0m --startnetworkm       Stars NetworkManager and wpa_supplicant services after capturing handshakes
+    -u  \033[0;90m|\033[0m --update              Check for updates
+    -v  \033[0;90m|\033[0m --version             Displays current version of tool
+    -h  \033[0;90m|\033[0m --help                Displays this help menu
 
 Keep in mind that you need to have spaces between every argument!
 Link: \033[0;36m{__link__}\033[0m"""
@@ -187,13 +188,15 @@ def StartListen(adapter):
     print(f"\nGoodbye..")
 
 def handleSysArgs():
-    global outputfile,deauth,Sout,Sdea,Skip,KillAva,KillnmAwpa,Sava,Snmw,StartsNM 
-    Sout = True;Sdea = True;Skip = False;KillAva = False;KillnmAwpa = False;Sava = False;Snmw = False;StartsNM = False
+    global outputfile,deauth,Sout,Sdea,Skip,KillAva,KillnmAwpa,Sava,Snmw,StartsNM,interf,AdaSet 
+    Sout = True;Sdea = True;Skip = False;KillAva = False;KillnmAwpa = False;Sava = False;Snmw = False;StartsNM = False;AdaSet = False
     outputfile = "clean"
     deauth = "--disable_deauthentication"
+    interf = ""
     for i, arg in enumerate(sys.argv):
         #print(f"{i} - {arg}")
         if arg.lower() == "-w" or arg.lower() == "--write":outputfile = str(sys.argv[int(i+1)]);Sout=False
+        elif arg.lower() == "-i" or arg.lower() == "--interface":interf = str(sys.argv[int(i+1)]);AdaSet=True
         elif arg.lower() == "-d" or arg.lower() == "--deauth":deauth="";Sdea=False
         elif arg.lower() == "-dd" or arg.lower() == "--dontdeauth":Sdea=False
         elif arg.lower() == "-s" or arg.lower() == "--skip":Skip=True
@@ -206,14 +209,26 @@ def handleSysArgs():
         elif arg.lower() == "-v" or arg.lower() == "--version":print(f"\nWifiTool by {__creator__} | version: {__version__}");quit()
 
 def main():
+    global AdaŚet, interf
+    def SelAdapt():
+            adapt = input(f"{grey}/>{white} Choose adapter: ")
+            inter = []
+            for i in interfaces:inter.append(i.split(":")[0])
+            if adapt in inter:
+                if i.split(":")[1] == "Managed":StartMonitor(adapt)
+                else: StartListen(adapt)
+            else:
+                print(f"\n{bad} That adapter doesn't exist\n")
+                SelAdapt()
     clear();GetCurrentMode()
     print("Welcome to")
     print(banner)
     print(f"{good} Available Adapters:")
     for i in interfaces:print(" "*4 + i.split(":")[0] + " - " + i.split(":")[1])
     print("\n")
-    def SelAdapt():
-        adapt = input(f"{grey}/>{white} Choose adapter: ")
+    if not AdaSet or len(interf)<1:SelAdapt()
+    else:
+        adapt = interf
         inter = []
         for i in interfaces:inter.append(i.split(":")[0])
         if adapt in inter:
@@ -222,7 +237,7 @@ def main():
         else:
             print(f"\n{bad} That adapter doesn't exist\n")
             SelAdapt()
-    SelAdapt()
+        SelAdapt()
 
 def check():
     # Check for tools
