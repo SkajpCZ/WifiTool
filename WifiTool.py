@@ -1,7 +1,8 @@
 import os,subprocess,time,datetime,codecs,sys,requests
 
+
 ## Info
-__version__ = "1"
+__version__ = "2"
 __creator__ = 'Skajp'
 __link__ = "https://github.com/SkajpCZ/WifiTool"
 __about__ = "This tool is for capturing wifi handshakes and extracting password hashes from them. It is specifically designed for wifi wardriving, this tool makes it easier and quicker to do."
@@ -19,6 +20,8 @@ Usage:
     -kN \033[0;90m|\033[0m --knetworkm           Kills NetworkManager and wpa_supplicant services
     -dN \033[0;90m|\033[0m --dknetworkm          Doesn't kill NetworkManager and wpa_supplicant services
     -sN \033[0;90m|\033[0m --startnetworkm       Stars NetworkManager and wpa_supplicant services after capturing handshakes
+    -eS \033[0;90m|\033[0m --exportssid          Script will export ssid to file
+    -as \033[0;90m|\033[0m --autostart           Bypasses Enter press before starting
     -u  \033[0;90m|\033[0m --update              Check for updates
     -v  \033[0;90m|\033[0m --version             Displays current version of tool
     -h  \033[0;90m|\033[0m --help                Displays this help menu
@@ -78,29 +81,34 @@ def avahi_runs():
 
 def avahi(action):
     a = ["stopped","stopping"] if action=="stop" else ["started","starting"]
-    try:subprocess.run(['sudo', 'systemctl', action, 'avahi_daemon.service'], check=True);print(f"{good} avahi_daemon {a[0]} successfully")
-    except subprocess.CalledProcessError as e:print(f"Error {a[1]} avahi_daemon: {e}")
+    try:subprocess.run(['sudo', 'systemctl', action, 'avahi_daemon.service'], check=True);print(f"{good} {yellow}avahi_daemon{white} {a[0]} successfully")
+    except subprocess.CalledProcessError as e:print(f"Error {a[1]} {yellow}avahi_daemon{white}: {e}")
 
 
 def nm(action):
     a = ["stopped","stopping"] if action=="stop" else ["started","starting"]
-    try:subprocess.run(['sudo', 'systemctl', action, 'NetworkManager'], check=True);print(f"{good} NetworkManager {a[0]} successfully")
-    except subprocess.CalledProcessError as e:print(f"{bad} Error {a[1]} NetworkManager: {e}")
+    try:subprocess.run(['sudo', 'systemctl', action, 'NetworkManager'], check=True);print(f"{good} {yellow}NetworkManager{white} {a[0]} successfully")
+    except subprocess.CalledProcessError as e:print(f"{bad} Error {a[1]} {yellow}NetworkManager{white}: {e}")
 
 def wpa(action):
     a = ["stopped","stopping"] if action=="stop" else ["started","starting"]
-    try:subprocess.run(['sudo', 'systemctl', action, 'wpa_supplicant'], check=True);print(f"{good} wpa_supplicant {a[0]} successfully")
-    except subprocess.CalledProcessError as e:print(f"Error {a[1]} wpa_supplicant: {e}")
+    try:subprocess.run(['sudo', 'systemctl', action, 'wpa_supplicant'], check=True);print(f"{good} {yellow}wpa_supplicant{white} {a[0]} successfully")
+    except subprocess.CalledProcessError as e:print(f"Error {a[1]} {yellow}wpa_supplicant{white}: {e}")
 
-def mm(interface):
+def mm(interface, mode):
     try:
         subprocess.run(['sudo', 'ip', 'link', 'set', 'dev', interface, 'down'], check=True)
-        subprocess.run(['sudo', 'iw', 'dev', interface, 'set', 'type', 'managed'], check=True)
+        subprocess.run(['sudo', 'iw', 'dev', interface, 'set', 'type', mode], check=True)
         subprocess.run(['sudo', 'ip', 'link', 'set', 'dev', interface, 'up'], check=True)
-        print(f"{good} {interface} set to managed mode successfully")
-    except subprocess.CalledProcessError as e: print(f"{bad} Error setting {interface} to monitor mode: {e}")
+        print(f"{good} {yellow}{interface}{white} set to {yellow}{mode}{white} mode successfully")
+    except subprocess.CalledProcessError as e: print(f"{bad} Error setting {yellow}{interface}{white} to {yellow}{mode}{white} mode: {e}")
 
 def CleanIt(hashfile, outputfile, adapter):
+    global ExpSSID, SSIDsF, SSIDsW
+    if ExpSSID:
+        SSIDsW = [];CapSW = []
+        with open(SSIDsF, "r") as f:
+            for i in f.readlines(): CapSW.append(i)
     try:alllwa=open(hashfile, "r");alllwa.close();BRUH=True
     except:BRUH=False;return "NO_HANDSHAKES"
     if BRUH:
@@ -112,21 +120,46 @@ def CleanIt(hashfile, outputfile, adapter):
                 else: pass
             for i in bruh:
                 c+=1
-                print(f" FOUND  |  Count {c}  |  " + codecs.decode(i.split("*")[5],'hex').decode('latin-1'))
+                SSID = codecs.decode(i.split("*")[5],'hex').decode('latin-1')
+                print(f" {green}FOUND  {grey}|{yellow}  Count {white}{c}  {grey}|{yellow}  {SSID}")
+                if ExpSSID:
+                    SSIDsW.append(SSID + "*.*" + str(i[:-2]).split("*")[6])
+        Fout = ""
+        time = str(datetime.datetime.now())
         try: 
             with open(str(outputfile + ".hc22000"),"a") as f:
                 for i in bruh:f.write(i)
-            return str(outputfile + ".hc22000")
+            Fout = str(outputfile + ".hc22000")
         except:
             if input(f"\n [-] File '{outputfile}' already exists, do you want to add the wifis? (Y/N): ").lower() == "y":
                 with open(str(outputfile + ".hc22000"),"a") as f:
                     for i in bruh:f.write(i)
-                return str(outputfile + ".hc22000")
+                Fout = str(outputfile + ".hc22000")
             else:
-                time = str(datetime.datetime.now()).replace(":","-").split(".")[0].replace(" ", "_")
+                timeForSave = time.replace(":","-").split(".")[0].replace(" ", "_")
                 with open(str(outputfile + {time} + ".hc22000"),"a") as f:
                     for i in bruh:f.write(i)
-                return str(outputfile + {time} + ".hc22000")
+                Fout = str(outputfile + {time} + ".hc22000")
+        if ExpSSID:
+            try: open(outputfile + "-SSIDs.txt","x")
+            except:pass
+            with open(outputfile + "-SSIDs.txt","w+") as f:
+                f.write(" - WifiTool | by Skajp - \n")
+                f.write(f"Interface: {adapter}\n")
+                f.write(f"Scan Time: {time[:-7]}\n")
+                Sargs = ""
+                for i in sys.argv:Sargs += i + " "
+                f.write(f"Tool arguments: {Sargs}\n")
+                f.write(f"Hashes save path: {str(Fout)}\n\n")
+                f.write("~------------------- Captured Handshakes -------------------~\n")
+                for i in SSIDsW:
+                    f.write(f"SSID: {i.split('*.*')[0]}  |  Hash: {i.split('*.*')[1]}\n")
+                f.write("\n\n~-------------------- Captured Networks --------------------~\n")
+                for i in CapSW:
+                    f.write(i)
+            print(f"\n{good} SSIDs written to {yellow}{outputfile + '-SSIDs.txt'}")
+        return Fout
+        
 
 def GetCurrentMode():
     global interfaces
@@ -150,7 +183,7 @@ def StartMonitor(adapter):
         else: pass
     else:
         if NM_runs():
-            if input(f"\n{status} NetworkManager and wpa_supplicant are running, do you want to stop them? {grey}(y/N):{white} ").lower() in ["y","yes"]:
+            if input(f"\n{status} {yellow}NetworkManager{white} and {yellow}wpa_supplicant{white} are running, do you want to stop them? {grey}(y/N):{white} ").lower() in ["y","yes"]:
                 print(f"{status} Input your sudo password please\n")
                 nm("stop");wpa("stop")
                 rootACCS=True;Stop=True
@@ -158,43 +191,44 @@ def StartMonitor(adapter):
     
     if not rootACCS:print(f"{status} Input your sudo password please\n")
     if avahi_runs() and not Stop:nm("stop");wpa("stop")
-    mm(adapter)
+    mm(adapter,"monitor")
     if avahi_runs() and not Stop:nm("start");wpa("start")
     GetCurrentMode()
     StartListen(adapter)
 
 def StartListen(adapter):
-    global outputfile, deauth
-    file = f"/tmp/WIFItoolPCAP" + str(datetime.datetime.now()).replace(":","-").split(".")[0].replace(" ", "_") +".pcap"
-    hashfile = f"/tmp/Hashes" + str(datetime.datetime.now()).replace(":","-").split(".")[0].replace(" ", "_") +".hc22000"
+    global outputfile, deauth, ExpSSID, SSIDsF
+    file = f"/tmp/WIFItool-PCAP" + str(datetime.datetime.now()).replace(":","-").split(".")[0].replace(" ", "_") +".pcap"
+    hashfile = f"/tmp/WIFItool-Hashes" + str(datetime.datetime.now()).replace(":","-").split(".")[0].replace(" ", "_") +".hc22000"
+    SSIDsF = f"/tmp/WifiTool-SSID" + str(datetime.datetime.now()).replace(":","-").split(".")[0].replace(" ", "_") +".txt"
     
     if Sdea:
         if input(f"\n{status} Do you want to use deauthentication? {grey}(y/N):{white} ").lower() in ["y","yes"]:deauth = ""
-    input(f"{status} After your capture is done just press {grey}[{yellow} Ctrl + c {grey}]\n{status} Press {grey}[{yellow} Enter {grey}]{white} to start capture...")
+    input(f"{status} After your capture is done just press {grey}[{yellow} Ctrl + c {grey}]\n{status} Press {grey}[{yellow} Enter {grey}]{white} to start capture...") if not Astart else print(f"{status} Starting...")
     os.system(f"sudo hcxdumptool -i {adapter} --beacontx=1 --attemptapmax=25 {deauth} -F --rds=1 -w {file}")
     if Sout: outputfile = input(f"\n\n{grey}/>{white} To what file do you want the hashes extracted?: ")
     print(f"\n{status} Extracting hashes...\n")
-    os.system(f"hcxpcapngtool -o {hashfile} {file}")
+    
+    eOPT = f"-o {hashfile} -E {SSIDsF}" if ExpSSID else f"-o {hashfile}"
+    os.system(f"hcxpcapngtool {eOPT} {file}")
     print(f"\n{status} Checking and clearing hashes...\n")
     out = CleanIt(hashfile, outputfile,adapter)
-    if not out == "NO_HANDSHAKES": print(f"\n{good} Hashes written to {yellow}{out}\n")
+    if not out == "NO_HANDSHAKES": print(f"{good} Hashes written to {yellow}{out}\n")
     else: print(f"{bad} You didn't capture any handshakes")
-
-    print(f"{status} Putting adapter back to managed mode...")
-    if avahi_runs():nm("stop");wpa("stop");mm(adapter);nm("start");wpa("start")
-    elif Sava and KillAva: avahi("start")
+    print(f"{status} Putting {yellow}{adapter}{white} back to managed mode...")
+    if avahi_runs():nm("stop");wpa("stop");mm(adapter,"managed");nm("start");wpa("start")
+    elif Sava and KillAva: avahi("start");mm(adapter,"managed")
     elif StartsNM: nm("start");wpa("start")
-    else: mm(adapter)
+    else: mm(adapter,"managed")
     print(f"\nGoodbye..");quit()
 
 def handleSysArgs():
-    global outputfile,deauth,Sout,Sdea,Skip,KillAva,KillnmAwpa,Sava,Snmw,StartsNM,interf,AdaSet 
-    Sout = True;Sdea = True;Skip = False;KillAva = False;KillnmAwpa = False;Sava = False;Snmw = False;StartsNM = False;AdaSet = False
+    global outputfile,deauth,Sout,Sdea,Skip,KillAva,KillnmAwpa,Sava,Snmw,StartsNM,interf,AdaSet, ExpSSID, Astart
+    Sout = True;Sdea = True;Skip = False;KillAva = False;KillnmAwpa = False;Sava = False;Snmw = False;StartsNM = False;AdaSet = False;ExpSSID = False;Astart = False
     outputfile = "clean"
     deauth = "--disable_deauthentication"
     interf = ""
     for i, arg in enumerate(sys.argv):
-        #print(f"{i} - {arg}")
         if arg.lower() == "-w" or arg.lower() == "--write":outputfile = str(sys.argv[int(i+1)]);Sout=False
         elif arg.lower() == "-i" or arg.lower() == "--interface":interf = str(sys.argv[int(i+1)]);AdaSet=True
         elif arg.lower() == "-d" or arg.lower() == "--deauth":deauth="";Sdea=False
@@ -204,12 +238,14 @@ def handleSysArgs():
         elif arg.lower() == "-kn" or arg.lower() == "--knetworkm":KillnmAwpa=True;Snmw=True
         elif arg.lower() == "-dn" or arg.lower() == "--dknetworkm":KillnmAwpa=False;Snmw=True
         elif arg.lower() == "-sn" or arg.lower() == "--startnetworkm":StartsNM = True
+        elif arg.lower() == "-es" or arg.lower() == "--exportssid":ExpSSID = True
+        elif arg.lower() == "-as" or arg.lower() == "--autostart":Astart = True
         elif arg.lower() == "-u" or arg.lower() == "--update":Update();quit()
         elif arg.lower() == "-h" or arg.lower() == "--help":print(banner,__helpmenu__);quit()
         elif arg.lower() == "-v" or arg.lower() == "--version":print(f"\nWifiTool by {__creator__} | version: {__version__}");quit()
 
 def main():
-    global AdaŚet, interf
+    global AdaSet, interf
     def SelAdapt():
             adapt = input(f"{grey}/>{white} Choose adapter: ")
             inter = []
@@ -239,7 +275,10 @@ def main():
             SelAdapt()
         SelAdapt()
 
+
 def check():
+    # Check for updates
+    Update()
     # Check for tools
     if not os.path.exists("/usr/bin/hcxdumptool") and not os.path.exists("/usr/bin/hcxpcapngtool") and not os.path.exists("/usr/sbin/iw"):
         with open("/usr/lib/os-release") as f:
@@ -272,18 +311,27 @@ def check():
 
 if __name__ == "__main__":
     if os.name in ["posix","darwin"]:
-        if os.path.exists("/usr/lib/os-release"): 
+        if os.path.exists("/usr/lib/os-release") or os.path.exists("/etc/os-release"): 
             handleSysArgs()
             if not Skip: check()
+        elif os.path.exists("/system/app") or os.path.exists("/system/priv-app"):
+            handleSysArgs()
+            print(f"{status} It seems that you have a {yellow}android{white}, some things may not work...\n");time.sleep(3)
+            if not Skip: check()
         else: 
-            print(f"{status} It seems that you have a mac, this script isn't made for it...\n")
-            c = 5
-            for _ in range(3):
+            handleSysArgs()
+            print(f"{status} It seems that you have a {yellow}mac{white}, this script isn't made for it...\n")
+            c = 3
+            for _ in range(c):
                 print(f" Exiting in {c}s...", end="\r")
                 c -= 1
                 time.sleep(1)
             quit()
         main()
     else: 
-        clear()
-        print(f"{bad} You need to run this on linux")
+        print(f"{bad} It seems that you are not on {yellow}linux{white}, this script only works on linux\n")
+        c = 3
+        for _ in range(c):
+            print(f" Exiting in {c}s...", end="\r")
+            c -= 1
+            time.sleep(1)

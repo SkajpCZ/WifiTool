@@ -1,6 +1,17 @@
 # WifiTool 
 This tool is for capturing wifi handshakes and extracting password hashes from them. It is specifically designed for wifi wardriving, this tool makes it easier and quicker to do.
 
+<br>
+
+# Updates in v2
+
+### Added
+- More polished output in terminal
+- Better checking
+- Output of SSIDs with some info about scan
+### Fixes
+- Setting monitor mode on adapter
+- Termux indetified as mac
 
 ---
 
@@ -11,7 +22,7 @@ This tool is for capturing wifi handshakes and extracting password hashes from t
 | |/\| | |  _| | | |/ _ \ / _ \| |
 \  /\  / | | | | | | (_) | (_) | |
  \/  \/|_|_| |_| \_/\___/ \___/|_| 
-                        by Skajp | v1 
+                        by Skajp | v2 
 
  
 What this tool does?
@@ -27,6 +38,8 @@ Usage:
     -kN | --knetworkm           Kills NetworkManager and wpa_supplicant services
     -dN | --dknetworkm          Doesn't kill NetworkManager and wpa_supplicant services
     -sN | --startnetworkm       Stars NetworkManager and wpa_supplicant services after capturing handshakes
+    -eS | --exportssid          Script will export ssid to file
+    -as | --autostart           Bypasses Enter press before starting
     -u  | --update              Check for updates
     -v  | --version             Displays current version of tool
     -h  | --help                Displays this help menu
