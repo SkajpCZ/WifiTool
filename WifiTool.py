@@ -58,7 +58,7 @@ def clear():os.system("cls") if os.name=="nt"else os.system("clear")
 def Update():
     try:
         Chec = int(requests.get("https://pastebin.com/raw/RTm8i0in").text)
-        ver = int(__version__.split(" ")[0]) if "testing" in __version__ else __version__
+        ver = int(__version__.split(" ")[0]) if "testing" in __version__ else int(__version__)
         if ver == Chec: print(f"\n{good} You have most recent version of WifiTool")
         elif ver < Chec: 
             print(f"\n{bad} You have older version of WifiTool")
