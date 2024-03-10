@@ -2,7 +2,7 @@ import os,subprocess,time,datetime,codecs,sys,requests
 
 
 ## Info
-__version__ = "2"
+__version__ = "3"
 __creator__ = 'Skajp'
 __link__ = "https://github.com/SkajpCZ/WifiTool"
 __about__ = "This tool is for capturing wifi handshakes and extracting password hashes from them. It is specifically designed for wifi wardriving, this tool makes it easier and quicker to do."
@@ -20,7 +20,8 @@ Usage:
     -kN \033[0;90m|\033[0m --knetworkm           Kills NetworkManager and wpa_supplicant services
     -dN \033[0;90m|\033[0m --dknetworkm          Doesn't kill NetworkManager and wpa_supplicant services
     -sN \033[0;90m|\033[0m --startnetworkm       Stars NetworkManager and wpa_supplicant services after capturing handshakes
-    -eS \033[0;90m|\033[0m --exportssid          Script will export ssid to file
+    -eS \033[0;90m|\033[0m --exportssid          Script will export ssids to file \033[0;90m(recommended everytime)\033[0m
+    -ds \033[0;90m|\033[0m --dontexportssid      Script will not export ssids to file
     -as \033[0;90m|\033[0m --autostart           Bypasses Enter press before starting
     -u  \033[0;90m|\033[0m --update              Check for updates
     -v  \033[0;90m|\033[0m --version             Displays current version of tool
@@ -81,13 +82,13 @@ def avahi_runs():
 
 def avahi(action):
     a = ["stopped","stopping"] if action=="stop" else ["started","starting"]
-    try:subprocess.run(['sudo', 'systemctl', action, 'avahi_daemon.service'], check=True);print(f"{good} {yellow}avahi_daemon{white} {a[0]} successfully")
+    try:subprocess.run(['sudo', 'systemctl', action, 'avahi_daemon.service'],check=True);print(f"{good} {yellow}avahi_daemon{white} {a[0]} successfully")
     except subprocess.CalledProcessError as e:print(f"Error {a[1]} {yellow}avahi_daemon{white}: {e}")
 
 
 def nm(action):
     a = ["stopped","stopping"] if action=="stop" else ["started","starting"]
-    try:subprocess.run(['sudo', 'systemctl', action, 'NetworkManager'], check=True);print(f"{good} {yellow}NetworkManager{white} {a[0]} successfully")
+    try:subprocess.run(['sudo', 'systemctl', action, 'NetworkManager'],check=True);print(f"{good} {yellow}NetworkManager{white} {a[0]} successfully")
     except subprocess.CalledProcessError as e:print(f"{bad} Error {a[1]} {yellow}NetworkManager{white}: {e}")
 
 def wpa(action):
@@ -104,7 +105,7 @@ def mm(interface, mode):
     except subprocess.CalledProcessError as e: print(f"{bad} Error setting {yellow}{interface}{white} to {yellow}{mode}{white} mode: {e}")
 
 def CleanIt(hashfile, outputfile, adapter):
-    global ExpSSID, SSIDsF, SSIDsW
+    global ExpSSID,SSIDsF,SSIDsW,deauth
     if ExpSSID:
         SSIDsW = [];CapSW = []
         with open(SSIDsF, "r") as f:
@@ -123,7 +124,8 @@ def CleanIt(hashfile, outputfile, adapter):
                 SSID = codecs.decode(i.split("*")[5],'hex').decode('latin-1')
                 print(f" {green}FOUND  {grey}|{yellow}  Count {white}{c}  {grey}|{yellow}  {SSID}")
                 if ExpSSID:
-                    SSIDsW.append(SSID + "*.*" + str(i[:-2]).split("*")[6])
+                    if str(i[:-2]).split("*")[1] == "02":SSIDsW.append(SSID + "*.*" + str(i[:-2]).split("*")[6])
+                    elif str(i[:-2]).split("*")[1] == "01":SSIDsW.append(SSID + "*.*" + str(i[:-2]).split("*")[2])
         Fout = ""
         time = str(datetime.datetime.now())
         try: 
@@ -150,7 +152,8 @@ def CleanIt(hashfile, outputfile, adapter):
                 Sargs = ""
                 for i in sys.argv:Sargs += i + " "
                 f.write(f"Tool arguments: {Sargs}\n")
-                f.write(f"Hashes save path: {str(Fout)}\n\n")
+                f.write(f"Hashes save path: {str(Fout)}\n")
+                f.write(f"Deauthing: {'yes' if len(deauth) < 1 else 'no'}\n\n")
                 f.write("~------------------- Captured Handshakes -------------------~\n")
                 for i in SSIDsW:
                     f.write(f"SSID: {i.split('*.*')[0]}  |  Hash: {i.split('*.*')[1]}\n")
@@ -163,7 +166,7 @@ def CleanIt(hashfile, outputfile, adapter):
 
 def GetCurrentMode():
     global interfaces
-    iwconfig_out=subprocess.check_output("iwconfig",stderr=subprocess.STDOUT).decode("latin-1").splitlines()
+    iwconfig_out=subprocess.check_output("iwconfig",stderr=subprocess.STDOUT, shell=True).decode("latin-1").splitlines()
     interfaces=[];c=0
     for i in iwconfig_out:
         if "802." in i:
@@ -187,7 +190,6 @@ def StartMonitor(adapter):
                 print(f"{status} Input your sudo password please\n")
                 nm("stop");wpa("stop")
                 rootACCS=True;Stop=True
-        
     
     if not rootACCS:print(f"{status} Input your sudo password please\n")
     if avahi_runs() and not Stop:nm("stop");wpa("stop")
@@ -197,7 +199,7 @@ def StartMonitor(adapter):
     StartListen(adapter)
 
 def StartListen(adapter):
-    global outputfile, deauth, ExpSSID, SSIDsF
+    global outputfile,deauth,ExpSSID,SSIDsF,SSIDZ
     file = f"/tmp/WIFItool-PCAP" + str(datetime.datetime.now()).replace(":","-").split(".")[0].replace(" ", "_") +".pcap"
     hashfile = f"/tmp/WIFItool-Hashes" + str(datetime.datetime.now()).replace(":","-").split(".")[0].replace(" ", "_") +".hc22000"
     SSIDsF = f"/tmp/WifiTool-SSID" + str(datetime.datetime.now()).replace(":","-").split(".")[0].replace(" ", "_") +".txt"
@@ -208,23 +210,28 @@ def StartListen(adapter):
     os.system(f"sudo hcxdumptool -i {adapter} --beacontx=1 --attemptapmax=25 {deauth} -F --rds=1 -w {file}")
     if Sout: outputfile = input(f"\n\n{grey}/>{white} To what file do you want the hashes extracted?: ")
     print(f"\n{status} Extracting hashes...\n")
-    
+
+    if SSIDZ:
+        ExpSSID=True
+        if input(f"\n{status} Do you want to extract SSIDs? {grey}(Y/n): {white}").lower() == "n":ExpSSID=False
     eOPT = f"-o {hashfile} -E {SSIDsF}" if ExpSSID else f"-o {hashfile}"
+
     os.system(f"hcxpcapngtool {eOPT} {file}")
     print(f"\n{status} Checking and clearing hashes...\n")
     out = CleanIt(hashfile, outputfile,adapter)
-    if not out == "NO_HANDSHAKES": print(f"{good} Hashes written to {yellow}{out}\n")
+    if not out == "NO_HANDSHAKES": print(f"\n{good} Hashes written to {yellow}{out}\n")
     else: print(f"{bad} You didn't capture any handshakes")
     print(f"{status} Putting {yellow}{adapter}{white} back to managed mode...")
     if avahi_runs():nm("stop");wpa("stop");mm(adapter,"managed");nm("start");wpa("start")
     elif Sava and KillAva: avahi("start");mm(adapter,"managed")
     elif StartsNM: nm("start");wpa("start")
     else: mm(adapter,"managed")
+    print(f"{status} Whole pcap stored in {grey}[{yellow} {file} {grey}]{white}")
     print(f"\nGoodbye..");quit()
 
 def handleSysArgs():
-    global outputfile,deauth,Sout,Sdea,Skip,KillAva,KillnmAwpa,Sava,Snmw,StartsNM,interf,AdaSet, ExpSSID, Astart
-    Sout = True;Sdea = True;Skip = False;KillAva = False;KillnmAwpa = False;Sava = False;Snmw = False;StartsNM = False;AdaSet = False;ExpSSID = False;Astart = False
+    global outputfile,deauth,Sout,Sdea,Skip,KillAva,KillnmAwpa,Sava,Snmw,StartsNM,interf,AdaSet,ExpSSID,Astart,SSIDZ
+    Sout=True;Sdea=True;Skip=False;KillAva=False;KillnmAwpa=False;Sava=False;Snmw=False;StartsNM=False;AdaSet=False;ExpSSID=False;Astart=False;SSIDZ=True
     outputfile = "clean"
     deauth = "--disable_deauthentication"
     interf = ""
@@ -237,9 +244,10 @@ def handleSysArgs():
         elif arg.lower() == "-ka" or arg.lower() == "--kavahi":KillAva=True;Sava=True
         elif arg.lower() == "-kn" or arg.lower() == "--knetworkm":KillnmAwpa=True;Snmw=True
         elif arg.lower() == "-dn" or arg.lower() == "--dknetworkm":KillnmAwpa=False;Snmw=True
-        elif arg.lower() == "-sn" or arg.lower() == "--startnetworkm":StartsNM = True
-        elif arg.lower() == "-es" or arg.lower() == "--exportssid":ExpSSID = True
-        elif arg.lower() == "-as" or arg.lower() == "--autostart":Astart = True
+        elif arg.lower() == "-sn" or arg.lower() == "--startnetworkm":StartsNM=True
+        elif arg.lower() == "-es" or arg.lower() == "--exportssid":ExpSSID=True;SSIDZ=False
+        elif arg.lower() == "-ds" or arg.lower() == "--dontexportssid":ExpSSID=True;SSIDZ=False
+        elif arg.lower() == "-as" or arg.lower() == "--autostart":Astart=True
         elif arg.lower() == "-u" or arg.lower() == "--update":Update();quit()
         elif arg.lower() == "-h" or arg.lower() == "--help":print(banner,__helpmenu__);quit()
         elif arg.lower() == "-v" or arg.lower() == "--version":print(f"\nWifiTool by {__creator__} | version: {__version__}");quit()
@@ -304,10 +312,19 @@ def check():
         else:
             print(f"{status} Problematic service {grey}[{yellow} avahi-daemon {grey}]{white} is running\n")
             c = 3
-            for _ in range(3):
+            for _ in range(c):
                 print(f" Continuing in {c}s...", end="\r")
                 c -= 1
                 time.sleep(1)
+    try:
+        if str(str(subprocess.check_output("hcxdumptool -v",shell=True).decode().split()[1]).replace(".","")) != "631":
+            print(f"{status} This script is tested with {grey}[{yellow} hcxdumptool v6.3.1 {grey}]{white}, it seems like you have different version, so some things maybe will not work for you\n")
+            c = 15
+            for _ in range(c):
+                print(f" Continuing in {c}s...", end="\r")
+                c -= 1
+                time.sleep(1)
+    except:print(f"{bad} Can't get version of {grey}[{yellow} hcxdumptool {grey}]{white}")
 
 if __name__ == "__main__":
     if os.name in ["posix","darwin"]:
