@@ -1,8 +1,7 @@
 import os,subprocess,time,datetime,codecs,sys,requests
 
-
 ## Info
-__version__ = "3"
+__version__ = "4"
 __creator__ = 'Skajp'
 __link__ = "https://github.com/SkajpCZ/WifiTool"
 __about__ = "This tool is for capturing wifi handshakes and extracting password hashes from them. It is specifically designed for wifi wardriving, this tool makes it easier and quicker to do."
@@ -54,7 +53,7 @@ banner = rf""" _    _ {yellow}_{white}  __ {yellow}_{white} _____           _
 """
 
 
-def clear():os.system("cls") if os.name=="nt" else os.system("clear")
+def clear():os.system("cls") if os.name=="nt"else os.system("clear")
 
 def Update():
     try:
@@ -63,8 +62,8 @@ def Update():
         if ver == Chec: print(f"\n{good} You have most recent version of WifiTool")
         elif ver < Chec: 
             print(f"\n{bad} You have older version of WifiTool")
-            print(f"{status} Current version {grey}[{yellow} {__version__} {grey}]{white} most recent one is {grey}[{yellow} {Chec} {grey}]{white}")
-            print(f"{status} New version is availaible on github: \033[0;36m{__link__}{white}")
+            print(f"{status} Installed version {grey}[{yellow} {__version__} {grey}]{white} most recent one is {grey}[{yellow} {Chec} {grey}]{white}")
+            print(f"{status} New version is available on github: \033[0;36m{__link__}{white}")
             if input(f"\n{grey}/>{white} Do you want to automatically download newest version? {grey}(y/N)").lower() in ["y","yes"]:os.system("git pull")
         elif ver > Chec: 
             print(f"\n{good} You have testing version of WifiTool")
@@ -124,8 +123,8 @@ def CleanIt(hashfile, outputfile, adapter):
                 SSID = codecs.decode(i.split("*")[5],'hex').decode('latin-1')
                 print(f" {green}FOUND  {grey}|{yellow}  Count {white}{c}  {grey}|{yellow}  {SSID}")
                 if ExpSSID:
-                    if str(i[:-2]).split("*")[1] == "02":SSIDsW.append(SSID + "*.*" + str(i[:-2]).split("*")[6])
-                    elif str(i[:-2]).split("*")[1] == "01":SSIDsW.append(SSID + "*.*" + str(i[:-2]).split("*")[2])
+                    if str(i[:-2]).split("*")[1]=="02":SSIDsW.append([SSID,str(i[:-2]).split("*")[6],str(i[:-2]).split("*")[1]])
+                    elif str(i[:-2]).split("*")[1]=="01":SSIDsW.append([SSID,str(i[:-2]).split("*")[2],str(i[:-2]).split("*")[1]])
         Fout = ""
         time = str(datetime.datetime.now())
         try: 
@@ -133,7 +132,7 @@ def CleanIt(hashfile, outputfile, adapter):
                 for i in bruh:f.write(i)
             Fout = str(outputfile + ".hc22000")
         except:
-            if input(f"\n [-] File '{outputfile}' already exists, do you want to add the wifis? (Y/N): ").lower() == "y":
+            if input(f"\n{status} File {grey}[{yellow} {outputfile} {grey}]{white} already exists, do you want to add the wifis? {grey}(y/N):{white} ").lower() in ["y","yes"]:
                 with open(str(outputfile + ".hc22000"),"a") as f:
                     for i in bruh:f.write(i)
                 Fout = str(outputfile + ".hc22000")
@@ -153,20 +152,22 @@ def CleanIt(hashfile, outputfile, adapter):
                 for i in sys.argv:Sargs += i + " "
                 f.write(f"Tool arguments: {Sargs}\n")
                 f.write(f"Hashes save path: {str(Fout)}\n")
-                f.write(f"Deauthing: {'yes' if len(deauth) < 1 else 'no'}\n\n")
+                f.write(f"Deauthing: {'Enabled' if len(deauth) < 1 else 'Disabled'}\n\n")
                 f.write("~------------------- Captured Handshakes -------------------~\n")
-                for i in SSIDsW:
-                    f.write(f"SSID: {i.split('*.*')[0]}  |  Hash: {i.split('*.*')[1]}\n")
+                longestI=1;longestR=1
+                for i,j,k in SSIDsW:
+                    if int(len(i))>longestI:longestI=len(i)
+                    if int(len(j))>longestR:longestR=len(j)
+                for name,hashS,wpa in SSIDsW: f.write(f'{name:<{int(longestI+1)}}| WPA: {wpa:<{3}}| Hash: {hashS:<{int(longestR+1)}}\n')
                 f.write("\n\n~-------------------- Captured Networks --------------------~\n")
-                for i in CapSW:
-                    f.write(i)
+                for i in CapSW: f.write(i)
             print(f"\n{good} SSIDs written to {yellow}{outputfile + '-SSIDs.txt'}")
         return Fout
         
 
 def GetCurrentMode():
     global interfaces
-    iwconfig_out=subprocess.check_output("iwconfig",stderr=subprocess.STDOUT, shell=True).decode("latin-1").splitlines()
+    iwconfig_out=subprocess.check_output("iwconfig",stderr=subprocess.STDOUT,shell=True).decode("latin-1").splitlines()
     interfaces=[];c=0
     for i in iwconfig_out:
         if "802." in i:
@@ -182,16 +183,16 @@ def StartMonitor(adapter):
     global Snmw
     rootACCS=False;Stop=False
     if Snmw:
-        if KillnmAwpa:print(f"{status} Input your sudo password please\n");nm("stop");wpa("stop");rootACCS=True;Stop=True
+        if KillnmAwpa:print(f"{status} Input your sudo password\n");nm("stop");wpa("stop");rootACCS=True;Stop=True
         else: pass
     else:
         if NM_runs():
             if input(f"\n{status} {yellow}NetworkManager{white} and {yellow}wpa_supplicant{white} are running, do you want to stop them? {grey}(y/N):{white} ").lower() in ["y","yes"]:
-                print(f"{status} Input your sudo password please\n")
+                print(f"{status} Input your sudo password\n")
                 nm("stop");wpa("stop")
                 rootACCS=True;Stop=True
     
-    if not rootACCS:print(f"{status} Input your sudo password please\n")
+    if not rootACCS:print(f"{status} Input your sudo password\n")
     if avahi_runs() and not Stop:nm("stop");wpa("stop")
     mm(adapter,"monitor")
     if avahi_runs() and not Stop:nm("start");wpa("start")
@@ -208,18 +209,18 @@ def StartListen(adapter):
         if input(f"\n{status} Do you want to use deauthentication? {grey}(y/N):{white} ").lower() in ["y","yes"]:deauth = ""
     input(f"{status} After your capture is done just press {grey}[{yellow} Ctrl + c {grey}]\n{status} Press {grey}[{yellow} Enter {grey}]{white} to start capture...") if not Astart else print(f"{status} Starting...")
     os.system(f"sudo hcxdumptool -i {adapter} --beacontx=1 --attemptapmax=25 {deauth} -F --rds=1 -w {file}")
-    if Sout: outputfile = input(f"\n\n{grey}/>{white} To what file do you want the hashes extracted?: ")
+    if Sout: outputfile = input(f"\n\n{grey}/>{white} What file do you want to extract the hashes to?: ")
     print(f"\n{status} Extracting hashes...\n")
 
     if SSIDZ:
         ExpSSID=True
-        if input(f"\n{status} Do you want to extract SSIDs? {grey}(Y/n): {white}").lower() == "n":ExpSSID=False
+        if input(f"\n{status} Do you want to extract SSIDs? {grey}(Y/n):{white} ").lower() == "n":ExpSSID=False
     eOPT = f"-o {hashfile} -E {SSIDsF}" if ExpSSID else f"-o {hashfile}"
 
     os.system(f"hcxpcapngtool {eOPT} {file}")
     print(f"\n{status} Checking and clearing hashes...\n")
-    out = CleanIt(hashfile, outputfile,adapter)
-    if not out == "NO_HANDSHAKES": print(f"\n{good} Hashes written to {yellow}{out}\n")
+    out=CleanIt(hashfile, outputfile,adapter)
+    if not out=="NO_HANDSHAKES": print(f"\n{good} Hashes written to {yellow}{out}\n")
     else: print(f"{bad} You didn't capture any handshakes")
     print(f"{status} Putting {yellow}{adapter}{white} back to managed mode...")
     if avahi_runs():nm("stop");wpa("stop");mm(adapter,"managed");nm("start");wpa("start")
@@ -249,7 +250,7 @@ def handleSysArgs():
         elif arg.lower() == "-ds" or arg.lower() == "--dontexportssid":ExpSSID=True;SSIDZ=False
         elif arg.lower() == "-as" or arg.lower() == "--autostart":Astart=True
         elif arg.lower() == "-u" or arg.lower() == "--update":Update();quit()
-        elif arg.lower() == "-h" or arg.lower() == "--help":print(banner,__helpmenu__);quit()
+        elif arg.lower() == "-h" or arg.lower() == "--help":print(banner,__helpmenu__) if sys.platform!="win32" else print(banner,__helpmenu__,f"\n{bad} You have Windows, this script wont work on it");quit()
         elif arg.lower() == "-v" or arg.lower() == "--version":print(f"\nWifiTool by {__creator__} | version: {__version__}");quit()
 
 def main():
@@ -327,28 +328,38 @@ def check():
     except:print(f"{bad} Can't get version of {grey}[{yellow} hcxdumptool {grey}]{white}")
 
 if __name__ == "__main__":
-    if os.name in ["posix","darwin"]:
-        if os.path.exists("/usr/lib/os-release") or os.path.exists("/etc/os-release"): 
+    # New OS Check
+    if sys.platform in ["linux","darwin"]:
+        if not os.path.exists("/usr/lib/os-release") or not os.path.exists("/etc/os-release"): 
             handleSysArgs()
             if not Skip: check()
         elif os.path.exists("/system/app") or os.path.exists("/system/priv-app"):
             handleSysArgs()
             print(f"{status} It seems that you have a {yellow}android{white}, some things may not work...\n");time.sleep(3)
             if not Skip: check()
-        else: 
-            handleSysArgs()
-            print(f"{status} It seems that you have a {yellow}mac{white}, this script isn't made for it...\n")
-            c = 3
-            for _ in range(c):
-                print(f" Exiting in {c}s...", end="\r")
-                c -= 1
-                time.sleep(1)
-            quit()
+        else:
+            if sys.platform == "darwin":
+                handleSysArgs()
+                print(f"{status} It seems that you have a {yellow}mac{white}, this script isn't made for it...\n")
+                c = 3
+                for _ in range(c):
+                    print(f" Exiting in {c}s...", end="\r")
+                    c -= 1
+                    time.sleep(1)
+                quit()
+            else:
+                handleSysArgs()
+                print(f"{bad} Can't determine your {yellow}linux{white} distribution...\n")
+                if input(f"{status} Do you still want to continue? {grey}(y/N):{white} ").lower() in ["y","yes"]:
+                    if not Skip: check()
+                quit()
         main()
-    else: 
+    else:
+        handleSysArgs()
         print(f"{bad} It seems that you are not on {yellow}linux{white}, this script only works on linux\n")
         c = 3
         for _ in range(c):
             print(f" Exiting in {c}s...", end="\r")
             c -= 1
             time.sleep(1)
+    

@@ -3,9 +3,14 @@ This tool is for capturing wifi handshakes and extracting password hashes from t
 
 <br>
 
-# Todo for v4
-- Make better checking of OS
-- Unify input
+# Updates for v4
+
+### Added
+- Text and input unified
+- Better output of ssids
+- Fixed most grammar mistakes
+- Improved OS checking
+
 
 # Updates in v3
 
