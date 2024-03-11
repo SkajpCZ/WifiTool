@@ -44,7 +44,7 @@ This tool is for capturing wifi handshakes and extracting password hashes from t
 | |/\| | |  _| | | |/ _ \ / _ \| |
 \  /\  / | | | | | | (_) | (_) | |
  \/  \/|_|_| |_| \_/\___/ \___/|_|
-                        by Skajp | v3
+                        by Skajp | v4
 
  
 What this tool does?
