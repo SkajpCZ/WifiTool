@@ -5,6 +5,7 @@ This tool is for capturing wifi handshakes and extracting password hashes from t
 
 # Todo for v4
 - Make better checking of OS
+- Unify input
 
 # Updates in v3
 
