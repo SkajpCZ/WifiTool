@@ -54,7 +54,7 @@ banner = rf""" _    _ {yellow}_{white}  __ {yellow}_{white} _____           _
 """
 
 
-def clear():os.system("cls") if os.name=="nt"else os.system("clear")
+def clear():os.system("cls") if os.name=="nt" else os.system("clear")
 
 def Update():
     try:
