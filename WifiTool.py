@@ -1,7 +1,7 @@
 import os,subprocess,time,datetime,codecs,sys,requests
 
 ## Info
-__version__ = "4"
+__version__ = "4 \033[0;90m(testing)\033[0m"
 __creator__ = 'Skajp'
 __link__ = "https://github.com/SkajpCZ/WifiTool"
 __about__ = "This tool is for capturing wifi handshakes and extracting password hashes from them. It is specifically designed for wifi wardriving, this tool makes it easier and quicker to do."
@@ -292,6 +292,7 @@ def check():
     if not os.path.exists("/usr/bin/hcxdumptool") and not os.path.exists("/usr/bin/hcxpcapngtool") and not os.path.exists("/usr/sbin/iw"):
         with open("/usr/lib/os-release") as f:
             a = f.read()
+            print(a)
             if not "Kali" in a: 
                 print(f"{status} Installing needed tools...")
                 os.system("sudo apt install hcxtools")
@@ -330,7 +331,7 @@ def check():
 if __name__ == "__main__":
     # New OS Check
     if sys.platform in ["linux","darwin"]:
-        if not os.path.exists("/usr/lib/os-release") or not os.path.exists("/etc/os-release"): 
+        if os.path.exists("/usr/lib/os-release") or os.path.exists("/etc/os-release"): 
             handleSysArgs()
             if not Skip: check()
         elif os.path.exists("/system/app") or os.path.exists("/system/priv-app"):
