@@ -1,7 +1,7 @@
 import os,subprocess,time,datetime,codecs,sys,requests
 
 ## Info
-__version__ = "4 \033[0;90m(testing)\033[0m"
+__version__ = "4"
 __creator__ = 'Skajp'
 __link__ = "https://github.com/SkajpCZ/WifiTool"
 __about__ = "This tool is for capturing wifi handshakes and extracting password hashes from them. It is specifically designed for wifi wardriving, this tool makes it easier and quicker to do."
