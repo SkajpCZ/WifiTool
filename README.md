@@ -94,8 +94,16 @@ pip install -r requirements.txt
 python3 WifiTool.py -h
 ```
 
+I recommend not to skip the check when you first run the tool
+
 # Examples
+
 I personally use this 
 ```bash
-python3 Wifitool.py -s -i wlan0 -dN -r -w /tmp/lol1 -dd -as
+python3 Wifitool.py -s -i <interface> -dN -r -dd -as -w <output file>
+```
+
+if you want to use deauthentication then
+```bash
+python3 Wifitool.py -s -i <interface> -dN -r -d -as -w <output file>
 ```
