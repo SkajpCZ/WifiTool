@@ -1,7 +1,7 @@
 import os,subprocess,time,datetime,codecs,sys,requests
 
 ## Info
-__version__ = "4"
+__version__ = "5"
 __creator__ = 'Skajp'
 __link__ = "https://github.com/SkajpCZ/WifiTool"
 __about__ = "This tool is for capturing wifi handshakes and extracting password hashes from them. It is specifically designed for wifi wardriving, this tool makes it easier and quicker to do."
@@ -19,8 +19,8 @@ Usage:
     -kN \033[0;90m|\033[0m --knetworkm           Kills NetworkManager and wpa_supplicant services
     -dN \033[0;90m|\033[0m --dknetworkm          Doesn't kill NetworkManager and wpa_supplicant services
     -sN \033[0;90m|\033[0m --startnetworkm       Stars NetworkManager and wpa_supplicant services after capturing handshakes
-    -eS \033[0;90m|\033[0m --exportssid          Script will export ssids to file \033[0;90m(recommended everytime)\033[0m
-    -ds \033[0;90m|\033[0m --dontexportssid      Script will not export ssids to file
+    -r  \033[0;90m|\033[0m --report              Script will export summary report of scanning \033[0;90m(recommended everytime)\033[0m
+    -dr \033[0;90m|\033[0m --dontreport          Script will not export summary report
     -as \033[0;90m|\033[0m --autostart           Bypasses Enter press before starting
     -u  \033[0;90m|\033[0m --update              Check for updates
     -v  \033[0;90m|\033[0m --version             Displays current version of tool
@@ -103,6 +103,8 @@ def mm(interface, mode):
         print(f"{good} {yellow}{interface}{white} set to {yellow}{mode}{white} mode successfully")
     except subprocess.CalledProcessError as e: print(f"{bad} Error setting {yellow}{interface}{white} to {yellow}{mode}{white} mode: {e}")
 
+def getTime():global __GLOBAL_TIME__;__GLOBAL_TIME__ = str(datetime.datetime.now())
+
 def CleanIt(hashfile, outputfile, adapter):
     global ExpSSID,SSIDsF,SSIDsW,deauth
     if ExpSSID:
@@ -121,12 +123,13 @@ def CleanIt(hashfile, outputfile, adapter):
             for i in bruh:
                 c+=1
                 SSID = codecs.decode(i.split("*")[5],'hex').decode('latin-1')
-                print(f" {green}FOUND  {grey}|{yellow}  Count {white}{c}  {grey}|{yellow}  {SSID}")
+                if str(i[:-2]).split("*")[1]=="02":print(f" {green}FOUND  {grey}|{yellow}  Count {white}{c}  {grey}|{yellow}  {SSID} {grey}(wpa2){white}")
+                elif str(i[:-2]).split("*")[1]=="01":print(f" {green}FOUND  {grey}|{yellow}  Count {white}{c}  {grey}|{yellow}  {SSID} {grey}(wpa1){white}")
+                else:print(f" {green}FOUND  {grey}|{yellow}  Count {white}{c}  {grey}|{yellow}  {SSID}{white}")
                 if ExpSSID:
                     if str(i[:-2]).split("*")[1]=="02":SSIDsW.append([SSID,str(i[:-2]).split("*")[6],str(i[:-2]).split("*")[1]])
                     elif str(i[:-2]).split("*")[1]=="01":SSIDsW.append([SSID,str(i[:-2]).split("*")[2],str(i[:-2]).split("*")[1]])
         Fout = ""
-        time = str(datetime.datetime.now())
         try: 
             with open(str(outputfile + ".hc22000"),"a") as f:
                 for i in bruh:f.write(i)
@@ -137,21 +140,29 @@ def CleanIt(hashfile, outputfile, adapter):
                     for i in bruh:f.write(i)
                 Fout = str(outputfile + ".hc22000")
             else:
-                timeForSave = time.replace(":","-").split(".")[0].replace(" ", "_")
-                with open(str(outputfile + {time} + ".hc22000"),"a") as f:
+                timeForSave = __GLOBAL_TIME__.replace(":","-").split(".")[0].replace(" ", "_")
+                with open(str(outputfile + {timeForSave} + ".hc22000"),"a") as f:
                     for i in bruh:f.write(i)
-                Fout = str(outputfile + {time} + ".hc22000")
+                Fout = str(outputfile + {timeForSave} + ".hc22000")
         if ExpSSID:
-            try: open(outputfile + "-SSIDs.txt","x")
+            try: open(outputfile + "-Report.txt","x")
             except:pass
-            with open(outputfile + "-SSIDs.txt","w+") as f:
-                f.write(" - WifiTool | by Skajp - \n")
+
+            if not Fout[0] == "/": Fout = os.path.dirname(os.path.realpath(__name__)) + "/" + Fout
+
+            if not outputfile[0] == "/": outputLOL = os.path.dirname(os.path.realpath(__name__)) + "/" + outputfile
+            else: outputLOL = outputfile
+
+            with open(outputfile + "-Report.txt","w+") as f:
+                f.write(f" - WifiTool (v{__version__}) | By {__creator__} - \n")
                 f.write(f"Interface: {adapter}\n")
-                f.write(f"Scan Time: {time[:-7]}\n")
+                f.write(f"Time of scan: {__GLOBAL_TIME__[:-7]}\n")
                 Sargs = ""
                 for i in sys.argv:Sargs += i + " "
-                f.write(f"Tool arguments: {Sargs}\n")
+                f.write(f"Arguments: {Sargs}\n")
                 f.write(f"Hashes save path: {str(Fout)}\n")
+                f.write(f"Number of captured handshakes: {len(bruh)}\n")
+                f.write(f"Number of captured networks: {len(CapSW)}\n")
                 f.write(f"Deauthing: {'Enabled' if len(deauth) < 1 else 'Disabled'}\n\n")
                 f.write("~------------------- Captured Handshakes -------------------~\n")
                 longestI=1;longestR=1
@@ -161,7 +172,7 @@ def CleanIt(hashfile, outputfile, adapter):
                 for name,hashS,wpa in SSIDsW: f.write(f'{name:<{int(longestI+1)}}| WPA: {wpa:<{3}}| Hash: {hashS:<{int(longestR+1)}}\n')
                 f.write("\n\n~-------------------- Captured Networks --------------------~\n")
                 for i in CapSW: f.write(i)
-            print(f"\n{good} SSIDs written to {yellow}{outputfile + '-SSIDs.txt'}")
+            print(f"\n{good} Report written to {yellow}{outputLOL + '-Report.txt'}{white}")
         return Fout
         
 
@@ -201,9 +212,10 @@ def StartMonitor(adapter):
 
 def StartListen(adapter):
     global outputfile,deauth,ExpSSID,SSIDsF,SSIDZ
-    file = f"/tmp/WIFItool-PCAP" + str(datetime.datetime.now()).replace(":","-").split(".")[0].replace(" ", "_") +".pcap"
-    hashfile = f"/tmp/WIFItool-Hashes" + str(datetime.datetime.now()).replace(":","-").split(".")[0].replace(" ", "_") +".hc22000"
-    SSIDsF = f"/tmp/WifiTool-SSID" + str(datetime.datetime.now()).replace(":","-").split(".")[0].replace(" ", "_") +".txt"
+    dateIDK = __GLOBAL_TIME__.replace(":","-").split(".")[0].replace(" ", "_")
+    file = f"/tmp/WIFItool-PCAP{dateIDK}.pcap"
+    hashfile = f"/tmp/WIFItool-Hashes{dateIDK}.hc22000"
+    SSIDsF = f"/tmp/WifiTool-Report{dateIDK}.txt"
     
     if Sdea:
         if input(f"\n{status} Do you want to use deauthentication? {grey}(y/N):{white} ").lower() in ["y","yes"]:deauth = ""
@@ -214,13 +226,13 @@ def StartListen(adapter):
 
     if SSIDZ:
         ExpSSID=True
-        if input(f"\n{status} Do you want to extract SSIDs? {grey}(Y/n):{white} ").lower() == "n":ExpSSID=False
+        if input(f"\n{status} Do you want to generate report? {grey}(Y/n):{white} ").lower() == "n":ExpSSID=False
     eOPT = f"-o {hashfile} -E {SSIDsF}" if ExpSSID else f"-o {hashfile}"
 
     os.system(f"hcxpcapngtool {eOPT} {file}")
     print(f"\n{status} Checking and clearing hashes...\n")
     out=CleanIt(hashfile, outputfile,adapter)
-    if not out=="NO_HANDSHAKES": print(f"\n{good} Hashes written to {yellow}{out}\n")
+    if not out=="NO_HANDSHAKES": print(f"\n{good} Hashes written to {yellow}{out}{white}\n")
     else: print(f"{bad} You didn't capture any handshakes")
     print(f"{status} Putting {yellow}{adapter}{white} back to managed mode...")
     if avahi_runs():nm("stop");wpa("stop");mm(adapter,"managed");nm("start");wpa("start")
@@ -228,7 +240,7 @@ def StartListen(adapter):
     elif StartsNM: nm("start");wpa("start")
     else: mm(adapter,"managed")
     print(f"{status} Whole pcap stored in {grey}[{yellow} {file} {grey}]{white}")
-    print(f"\nGoodbye..");quit()
+    print(f"\nGoodbye...");quit()
 
 def handleSysArgs():
     global outputfile,deauth,Sout,Sdea,Skip,KillAva,KillnmAwpa,Sava,Snmw,StartsNM,interf,AdaSet,ExpSSID,Astart,SSIDZ
@@ -236,6 +248,7 @@ def handleSysArgs():
     outputfile = "clean"
     deauth = "--disable_deauthentication"
     interf = ""
+    deprecatedLOL = False
     for i, arg in enumerate(sys.argv):
         if arg.lower() == "-w" or arg.lower() == "--write":outputfile = str(sys.argv[int(i+1)]);Sout=False
         elif arg.lower() == "-i" or arg.lower() == "--interface":interf = str(sys.argv[int(i+1)]);AdaSet=True
@@ -246,15 +259,20 @@ def handleSysArgs():
         elif arg.lower() == "-kn" or arg.lower() == "--knetworkm":KillnmAwpa=True;Snmw=True
         elif arg.lower() == "-dn" or arg.lower() == "--dknetworkm":KillnmAwpa=False;Snmw=True
         elif arg.lower() == "-sn" or arg.lower() == "--startnetworkm":StartsNM=True
-        elif arg.lower() == "-es" or arg.lower() == "--exportssid":ExpSSID=True;SSIDZ=False
-        elif arg.lower() == "-ds" or arg.lower() == "--dontexportssid":ExpSSID=True;SSIDZ=False
+        elif arg.lower() == "-r" or arg.lower() == "--report":ExpSSID=True;SSIDZ=False
+        elif arg.lower() == "-dr" or arg.lower() == "--dontreport":ExpSSID=True;SSIDZ=False
         elif arg.lower() == "-as" or arg.lower() == "--autostart":Astart=True
         elif arg.lower() == "-u" or arg.lower() == "--update":Update();quit()
-        elif arg.lower() == "-h" or arg.lower() == "--help":print(banner,__helpmenu__) if sys.platform!="win32" else print(banner,__helpmenu__,f"\n{bad} You have Windows, this script wont work on it");quit()
+        elif arg.lower() == "-h" or arg.lower(  ) == "--help":print(banner,__helpmenu__) if sys.platform!="win32" else print(banner,__helpmenu__,f"\n{bad} You have Windows, this script wont work on it");quit()
         elif arg.lower() == "-v" or arg.lower() == "--version":print(f"\nWifiTool by {__creator__} | version: {__version__}");quit()
+        else:
+            if arg.lower() == "-es" or arg.lower() == "--exportssid": deprecatedLOL = True; print(f"\nYou have {red}deprecated{white} argument {red}-es{grey}/{red}--exportssid{white}, you need to use new argument {yellow}-r{grey}/{yellow}--report{white}")
+            if arg.lower() == "-ds" or arg.lower() == "--dontexportssid": deprecatedLOL = True; print(f"\nYou have {red}deprecated{white} argument {red}-ds{grey}/{red}--dontexportssid{white}, you need to use new argument {yellow}-dr{grey}/{yellow}--dontreport{white}")
+    if deprecatedLOL:quit()
 
 def main():
     global AdaSet, interf
+    getTime()
     def SelAdapt():
             adapt = input(f"{grey}/>{white} Choose adapter: ")
             inter = []
@@ -351,6 +369,8 @@ if __name__ == "__main__":
             else:
                 handleSysArgs()
                 print(f"{bad} Can't determine your {yellow}linux{white} distribution...\n")
+                if Astart: 
+                    if not Skip: check()
                 if input(f"{status} Do you still want to continue? {grey}(y/N):{white} ").lower() in ["y","yes"]:
                     if not Skip: check()
                 quit()

@@ -3,6 +3,19 @@ This tool is for capturing wifi handshakes and extracting password hashes from t
 
 <br>
 
+# Updates for v5
+
+### Added
+ - Script displays version of wpa encryption when cleaning handshakes, if there is neither, it will show nothing
+ - Replaced SSIDs with report, new argument -r/--report and -dr/--dontreport, deprecated are -eS/--exportssid and -ds/--dontexportssid
+ - Single time check instead of multiple checks -> only one check at the beginning of the script
+ - More info about scan in report, changed some names in the report
+ - If you select autostart, it won't prompt you to press y when it hasn't detected your OS
+### Fixes
+ - Colors
+ - OS checking, rechecked - it should work just fine
+
+
 # Updates for v4
 
 ### Added
@@ -43,8 +56,8 @@ This tool is for capturing wifi handshakes and extracting password hashes from t
 | |  | |_| |_ _  | | ___   ___ | |
 | |/\| | |  _| | | |/ _ \ / _ \| |
 \  /\  / | | | | | | (_) | (_) | |
- \/  \/|_|_| |_| \_/\___/ \___/|_|
-                        by Skajp | v4
+ \/  \/|_|_| |_| \_/\___/ \___/|_| 
+                        by Skajp | v5
 
  
 What this tool does?
@@ -60,8 +73,8 @@ Usage:
     -kN | --knetworkm           Kills NetworkManager and wpa_supplicant services
     -dN | --dknetworkm          Doesn't kill NetworkManager and wpa_supplicant services
     -sN | --startnetworkm       Stars NetworkManager and wpa_supplicant services after capturing handshakes
-    -eS | --exportssid          Script will export ssids to file (recommended everytime)
-    -ds | --dontexportssid      Script will not export ssids to file
+    -r  | --report              Script will export summary report of scanning (recommended everytime)
+    -dr | --dontreport          Script will not export summary report
     -as | --autostart           Bypasses Enter press before starting
     -u  | --update              Check for updates
     -v  | --version             Displays current version of tool
@@ -79,4 +92,10 @@ git clone https://github.com/SkajpCZ/WifiTool
 cd WifiTool
 pip install -r requirements.txt
 python3 WifiTool.py -h
+```
+
+# Examples
+I personally use this 
+```bash
+python3 Wifitool.py -s -i wlan0 -dN -r -w /tmp/lol1 -dd -as
 ```
