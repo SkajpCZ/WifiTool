@@ -3,6 +3,12 @@ This tool is for capturing wifi handshakes and extracting password hashes from t
 
 <br>
 
+# Updates for v6
+
+### Added
+- Bug fixes
+- Implemted new version of hcxdumptool
+
 # Updates for v5
 
 ### Added

@@ -1,7 +1,7 @@
 import os,subprocess,time,datetime,codecs,sys,requests
 
 ## Info
-__version__ = "5"
+__version__ = "6"
 __creator__ = 'Skajp'
 __link__ = "https://github.com/SkajpCZ/WifiTool"
 __about__ = "This tool is for capturing wifi handshakes and extracting password hashes from them. It is specifically designed for wifi wardriving, this tool makes it easier and quicker to do."
@@ -220,7 +220,7 @@ def StartListen(adapter):
     if Sdea:
         if input(f"\n{status} Do you want to use deauthentication? {grey}(y/N):{white} ").lower() in ["y","yes"]:deauth = ""
     input(f"{status} After your capture is done just press {grey}[{yellow} Ctrl + c {grey}]\n{status} Press {grey}[{yellow} Enter {grey}]{white} to start capture...") if not Astart else print(f"{status} Starting...")
-    os.system(f"sudo hcxdumptool -i {adapter} --beacontx=1 --attemptapmax=25 {deauth} -F --rds=1 -w {file}")
+    os.system(f"sudo hcxdumptool -i {adapter} --attemptapmax=25 {deauth} -F --rds=1 -w {file}")
     if Sout: outputfile = input(f"\n\n{grey}/>{white} What file do you want to extract the hashes to?: ")
     print(f"\n{status} Extracting hashes...\n")
 
@@ -237,7 +237,7 @@ def StartListen(adapter):
     print(f"{status} Putting {yellow}{adapter}{white} back to managed mode...")
     if avahi_runs():nm("stop");wpa("stop");mm(adapter,"managed");nm("start");wpa("start")
     elif Sava and KillAva: avahi("start");mm(adapter,"managed")
-    elif StartsNM: nm("start");wpa("start")
+    elif StartsNM: mm(adapter,"managed");nm("start");wpa("start")
     else: mm(adapter,"managed")
     print(f"{status} Whole pcap stored in {grey}[{yellow} {file} {grey}]{white}")
     print(f"\nGoodbye...");quit()
@@ -337,8 +337,8 @@ def check():
                 c -= 1
                 time.sleep(1)
     try:
-        if str(str(subprocess.check_output("hcxdumptool -v",shell=True).decode().split()[1]).replace(".","")) != "631":
-            print(f"{status} This script is tested with {grey}[{yellow} hcxdumptool v6.3.1 {grey}]{white}, it seems like you have different version, so some things maybe will not work for you\n")
+        if str(str(subprocess.check_output("hcxdumptool -v",shell=True).decode().split()[1]).replace(".","")) != "634":
+            print(f"{status} This script is tested with {grey}[{yellow} hcxdumptool v6.3.4 {grey}]{white}, it seems like you have different version, so some things maybe will not work for you\n")
             c = 15
             for _ in range(c):
                 print(f" Continuing in {c}s...", end="\r")
