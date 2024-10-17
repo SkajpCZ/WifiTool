@@ -1,7 +1,7 @@
 import os,subprocess,time,datetime,codecs,sys,requests
 
 ## Info
-__version__ = "6"
+__version__ = "7 \033[0;90m(testing)\033[0m"
 __creator__ = 'Skajp'
 __link__ = "https://github.com/SkajpCZ/WifiTool"
 __about__ = "This tool is for capturing wifi handshakes and extracting password hashes from them. It is specifically designed for wifi wardriving, this tool makes it easier and quicker to do."
@@ -53,7 +53,7 @@ banner = rf""" _    _ {yellow}_{white}  __ {yellow}_{white} _____           _
 """
 
 
-def clear():os.system("cls") if os.name=="nt"else os.system("clear")
+def clear():os.system("cls") if os.name=="nt" else os.system("clear")
 
 def Update():
     try:
@@ -67,7 +67,7 @@ def Update():
             if input(f"\n{grey}/>{white} Do you want to automatically download newest version? {grey}(y/N)").lower() in ["y","yes"]:os.system("git pull")
         elif ver > Chec: 
             print(f"\n{good} You have testing version of WifiTool")
-            print(f"{status} Keep in mind that not all things can work properly")
+            print(f"{status} Keep in mind that not all things can work properly\n")
     except: print(f"\n{bad} Can't connect to internet, please check your internet connection and try again in few minutes")
 
 
@@ -276,10 +276,19 @@ def main():
     def SelAdapt():
             adapt = input(f"{grey}/>{white} Choose adapter: ")
             inter = []
-            for i in interfaces:inter.append(i.split(":")[0])
-            if adapt in inter:
-                if i.split(":")[1] == "Managed":StartMonitor(adapt)
-                else: StartListen(adapt)
+            for j,i in enumerate(interfaces): inter.append([j,i.split(":")[0]])
+            # iface
+            if adapt in inter[1]:
+                for i in inter:
+                    if i[1] == adapt: iface = i[1]; mode = interfaces[int(i[0])].split(":")[1]
+                if mode == "Managed":StartMonitor(iface)
+                else: StartListen(iface)
+            # number
+            elif int(adapt) < len(inter) and int(adapt) >= 0:
+                for i in inter:
+                    if i[0] == int(adapt): iface = i[1]; mode = interfaces[int(adapt)].split(":")[1]
+                if mode == "Managed":StartMonitor(iface)
+                else: StartListen(iface)
             else:
                 print(f"\n{bad} That adapter doesn't exist\n")
                 SelAdapt()
@@ -287,7 +296,8 @@ def main():
     print("Welcome to")
     print(banner)
     print(f"{good} Available Adapters:")
-    for i in interfaces:print(" "*4 + i.split(":")[0] + " - " + i.split(":")[1])
+    for i,j in enumerate(interfaces):
+        print(" "*4 +f"{i} | " + j.split(":")[0] + " - " + j.split(":")[1])
     print("\n")
     if not AdaSet or len(interf)<1:SelAdapt()
     else:
@@ -307,77 +317,59 @@ def check():
     # Check for updates
     Update()
     # Check for tools
-    if not os.path.exists("/usr/bin/hcxdumptool") and not os.path.exists("/usr/bin/hcxpcapngtool") and not os.path.exists("/usr/sbin/iw"):
-        with open("/usr/lib/os-release") as f:
-            a = f.read()
-            print(a)
-            if not "Kali" in a: 
-                print(f"{status} Installing needed tools...")
-                os.system("sudo apt install hcxtools")
-            else:
-                c = ""
-                for i in a.splitlines():
-                    if "NAME=" in i and not "PRETTY" in i:c=i.split("=")[1].replace('"',"")
-                print(f"{status} This script is made for {grey}[{yellow} Kali Linux {grey}]{white} it seems that you have different distribution {grey}({yellow} {c} {grey}){white}")
-                print(f"{bad} For this tool to function you need to install {grey}[{yellow} hcxdumptool {grey}]{white} and {grey}[{yellow} hcxpcapngtool {grey}]{white} and you also need to install {grey}[{yellow} iw {grey}]")
-                quit()
+    missingTool = False
+    if not os.path.exists("/usr/bin/hcxdumptool"): print(f"Couldn't find {grey}[{yellow} hcxdumptool {grey}]{white} in your system, please install it");missingTool = True
+    if not os.path.exists("/usr/bin/hcxpcapngtool"): print(f"Couldn't find {grey}[{yellow} hcxdumptool {grey}]{white} in your system, please install it"); missingTool = True
+    if not os.path.exists("/usr/sbin/iw"): print(f"Couldn't find {grey}[{yellow} hcxdumptool {grey}]{white} in your system, please install it"); missingTool = True
+    if missingTool: quit()
+
     # Check if adapter has monitor mode
     a = subprocess.check_output("iw list",shell=True,stderr=subprocess.STDOUT).decode()
     if not "monitor" in a:
         print(f"{bad} Your wifi adapter doesn't support {grey}[{yellow} monitor mode {grey}]{white}")
-        print(f"{status} If you want, here is list of adapters you can buy: {grey}[{yellow} https://pastebin.com/raw/4XRQxFqU {grey}]{white}")
+        print(f"{status} If you want to use this tool here is list of adapters you can buy: {grey}[{yellow} https://pastebin.com/raw/4XRQxFqU {grey}]{white}")
+        quit()
     # avahi check
     if avahi_runs():
         if Sava and KillAva: avahi("stop")
         else:
             print(f"{status} Problematic service {grey}[{yellow} avahi-daemon {grey}]{white} is running\n")
-            c = 3
+            c = 2
             for _ in range(c):
                 print(f" Continuing in {c}s...", end="\r")
                 c -= 1
                 time.sleep(1)
     try:
         if str(str(subprocess.check_output("hcxdumptool -v",shell=True).decode().split()[1]).replace(".","")) != "634":
-            print(f"{status} This script is tested with {grey}[{yellow} hcxdumptool v6.3.4 {grey}]{white}, it seems like you have different version, so some things maybe will not work for you\n")
-            c = 15
+            print(f"{bad} This script is tested with {grey}[{yellow} hcxdumptool v6.3.4 {grey}]{white}, it seems like you have different version")
+            print(f"{status} Script may not work at all because of it, so keep that in your mind\n")
+            c = 5
             for _ in range(c):
                 print(f" Continuing in {c}s...", end="\r")
                 c -= 1
                 time.sleep(1)
-    except:print(f"{bad} Can't get version of {grey}[{yellow} hcxdumptool {grey}]{white}")
+    except:
+        print(f"{bad} Can't get version of {grey}[{yellow} hcxdumptool {grey}]{white}")
 
 if __name__ == "__main__":
-    # New OS Check
+    handleSysArgs()
+    # New New OS Check
     if sys.platform in ["linux","darwin"]:
-        if os.path.exists("/usr/lib/os-release") or os.path.exists("/etc/os-release"): 
+        if os.path.exists("/system/app") or os.path.exists("/system/priv-app"): 
+            print(f"{status} It seems that you have a {grey}[{yellow} Android {grey}]{white}, some things may not work...\n");time.sleep(3)
+        elif sys.platform == "darwin":
             handleSysArgs()
-            if not Skip: check()
-        elif os.path.exists("/system/app") or os.path.exists("/system/priv-app"):
-            handleSysArgs()
-            print(f"{status} It seems that you have a {yellow}android{white}, some things may not work...\n");time.sleep(3)
-            if not Skip: check()
-        else:
-            if sys.platform == "darwin":
-                handleSysArgs()
-                print(f"{status} It seems that you have a {yellow}mac{white}, this script isn't made for it...\n")
-                c = 3
-                for _ in range(c):
-                    print(f" Exiting in {c}s...", end="\r")
-                    c -= 1
-                    time.sleep(1)
-                quit()
-            else:
-                handleSysArgs()
-                print(f"{bad} Can't determine your {yellow}linux{white} distribution...\n")
-                if Astart: 
-                    if not Skip: check()
-                if input(f"{status} Do you still want to continue? {grey}(y/N):{white} ").lower() in ["y","yes"]:
-                    if not Skip: check()
-                quit()
+            print(f"{status} It seems that you have a {yellow}mac{white}, this script isn't made for it...\n")
+            c = 3
+            for _ in range(c):
+                print(f" Exiting in {c}s...", end="\r")
+                c -= 1
+                time.sleep(1)
+            quit()
+        if not Skip: check()
         main()
     else:
-        handleSysArgs()
-        print(f"{bad} It seems that you are not on {yellow}linux{white}, this script only works on linux\n")
+        print(f"{bad} It seems that you are not on {grey}[{yellow} Linux {grey}]{white}, this script won't work for you\n")
         c = 3
         for _ in range(c):
             print(f" Exiting in {c}s...", end="\r")

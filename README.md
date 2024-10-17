@@ -3,6 +3,15 @@ This tool is for capturing wifi handshakes and extracting password hashes from t
 
 <br>
 
+# Update for v7
+
+#### Added
+- You can now selcet adapter with number
+#### Fixes
+- Bug fixes
+- OS checking
+- Wifi adapter selection
+
 # Updates for v6
 
 ### Added
