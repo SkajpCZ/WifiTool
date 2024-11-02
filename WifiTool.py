@@ -1,7 +1,7 @@
 import os,subprocess,time,datetime,codecs,sys,requests
 
 ## Info
-__version__ = "9" 
+__version__ = "9"
 __creator__ = 'Skajp'
 __link__ = "https://github.com/SkajpCZ/WifiTool"
 __about__ = "This tool is for capturing wifi handshakes and extracting password hashes from them. It is specifically designed for wifi wardriving, this tool makes it easier and quicker to do."
@@ -236,7 +236,7 @@ def StartListen(adapter):
     else: print(f"{bad} You didn't capture any handshakes")
     print(f"{status} Putting {yellow}{adapter}{white} back to managed mode...")
     if not SNMset:
-        StarsNM = False if input(f"{status} Do you want to start {yellow}NetworkManager{white}? {grey}(Y/n){white}:").lower() in ["n","no"] else True 
+        StarsNM = False if input(f"{status} Do you want to start {yellow}NetworkManager{white}? {grey}(Y/n){white}: ").lower() in ["n","no"] else True 
     if avahi_runs():nm("stop");wpa("stop");mm(adapter,"managed");nm("start");wpa("start")
     elif Sava and KillAva: avahi("start");mm(adapter,"managed")
     elif StartsNM: mm(adapter,"managed");nm("start");wpa("start")
