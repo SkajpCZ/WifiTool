@@ -191,7 +191,7 @@ def GetCurrentMode():
         c+=1
 
 def StartMonitor(adapter):
-    global Snmw
+    global Snmw, StartsNM
     rootACCS=False;Stop=False
     if Snmw:
         if KillnmAwpa:print(f"{status} Input your sudo password\n");nm("stop");wpa("stop");rootACCS=True;Stop=True
@@ -236,8 +236,8 @@ def StartListen(adapter):
     else: print(f"{bad} You didn't capture any handshakes")
     print(f"{status} Putting {yellow}{adapter}{white} back to managed mode...")
     if not SNMset:
-        StarsNM = False if input(f"{status} Do you want to start {yellow}NetworkManager{white}? {grey}(Y/n){white}: ").lower() in ["n","no"] else True 
-    if avahi_runs():nm("stop");wpa("stop");mm(adapter,"managed");nm("start");wpa("start")
+        StartsNM = False if input(f"{status} Do you want to start {yellow}NetworkManager{white}? {grey}(Y/n){white}: ").lower() in ["n","no"] else True 
+    if avahi_runs(): nm("stop");wpa("stop");mm(adapter,"managed");nm("start");wpa("start")
     elif Sava and KillAva: avahi("start");mm(adapter,"managed")
     elif StartsNM: mm(adapter,"managed");nm("start");wpa("start")
     else: mm(adapter,"managed")
