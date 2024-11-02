@@ -1,7 +1,7 @@
 import os,subprocess,time,datetime,codecs,sys,requests
 
 ## Info
-__version__ = "7"
+__version__ = "8"
 __creator__ = 'Skajp'
 __link__ = "https://github.com/SkajpCZ/WifiTool"
 __about__ = "This tool is for capturing wifi handshakes and extracting password hashes from them. It is specifically designed for wifi wardriving, this tool makes it easier and quicker to do."
@@ -278,7 +278,7 @@ def main():
             inter = []
             for j,i in enumerate(interfaces): inter.append([j,i.split(":")[0]])
             # iface
-            if adapt in inter[1]:
+            if adapt in [i[1] for i in inter]:
                 for i in inter:
                     if i[1] == adapt: iface = i[1]; mode = interfaces[int(i[0])].split(":")[1]
                 if mode == "Managed":StartMonitor(iface)
