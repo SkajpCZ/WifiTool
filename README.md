@@ -3,6 +3,13 @@ This tool is for capturing wifi handshakes and extracting password hashes from t
 
 <br>
 
+# Update for v10
+
+#### Fixes
+- Fixed saving hashes and reports
+- Fixed when character is not in utf-8, it converts to hex
+
+
 # Update for v9
 
 #### Fixes

@@ -1,7 +1,7 @@
 import os,subprocess,time,datetime,codecs,sys,requests
 
 ## Info
-__version__ = "9"
+__version__ = "10"
 __creator__ = 'Skajp'
 __link__ = "https://github.com/SkajpCZ/WifiTool"
 __about__ = "This tool is for capturing wifi handshakes and extracting password hashes from them. It is specifically designed for wifi wardriving, this tool makes it easier and quicker to do."
@@ -107,6 +107,9 @@ def getTime():global __GLOBAL_TIME__;__GLOBAL_TIME__ = str(datetime.datetime.now
 
 def CleanIt(hashfile, outputfile, adapter):
     global ExpSSID,SSIDsF,SSIDsW,deauth
+
+    if len(outputfile) == 0: outputfile = __GLOBAL_TIME__.replace(":","-").split(".")[0].replace(" ", "_")
+    
     if ExpSSID:
         SSIDsW = [];CapSW = []
         with open(SSIDsF, "r") as f:
@@ -123,6 +126,11 @@ def CleanIt(hashfile, outputfile, adapter):
             for i in bruh:
                 c+=1
                 SSID = codecs.decode(i.split("*")[5],'hex').decode('latin-1')
+                def isUTF8(string):
+                    try:string.encode('utf-8').decode('utf-8');return True
+                    except UnicodeDecodeError: return False
+                if not isUTF8(SSID): SSID = SSID.encode('latin1', errors='ignore').hex()
+
                 if str(i[:-2]).split("*")[1]=="02":print(f" {green}FOUND  {grey}|{yellow}  Count {white}{c}  {grey}|{yellow}  {SSID} {grey}(wpa2){white}")
                 elif str(i[:-2]).split("*")[1]=="01":print(f" {green}FOUND  {grey}|{yellow}  Count {white}{c}  {grey}|{yellow}  {SSID} {grey}(wpa1){white}")
                 else:print(f" {green}FOUND  {grey}|{yellow}  Count {white}{c}  {grey}|{yellow}  {SSID}{white}")
@@ -145,7 +153,7 @@ def CleanIt(hashfile, outputfile, adapter):
                     for i in bruh:f.write(i)
                 Fout = str(outputfile + {timeForSave} + ".hc22000")
         if ExpSSID:
-            try: open(outputfile + "-Report.txt","x")
+            try: open(str(outputfile) + "-Report.txt","x")
             except:pass
 
             if not Fout[0] == "/": Fout = os.path.dirname(os.path.realpath(__name__)) + "/" + Fout
@@ -167,6 +175,10 @@ def CleanIt(hashfile, outputfile, adapter):
                 f.write("~------------------- Captured Handshakes -------------------~\n")
                 longestI=1;longestR=1
                 for i,j,k in SSIDsW:
+                    def isUTF8(string):
+                         try:string.encode('utf-8').decode('utf-8');return True
+                        except UnicodeDecodeError: return False
+                    if not isUTF8(i): i = i.encode('latin1', errors='ignore').hex()
                     if int(len(i))>longestI:longestI=len(i)
                     if int(len(j))>longestR:longestR=len(j)
                 for name,hashS,wpa in SSIDsW: f.write(f'{name:<{int(longestI+1)}}| WPA: {wpa:<{3}}| Hash: {hashS:<{int(longestR+1)}}\n')
