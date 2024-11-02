@@ -1,7 +1,7 @@
 import os,subprocess,time,datetime,codecs,sys,requests
 
 ## Info
-__version__ = "8"
+__version__ = "9" 
 __creator__ = 'Skajp'
 __link__ = "https://github.com/SkajpCZ/WifiTool"
 __about__ = "This tool is for capturing wifi handshakes and extracting password hashes from them. It is specifically designed for wifi wardriving, this tool makes it easier and quicker to do."
@@ -235,6 +235,8 @@ def StartListen(adapter):
     if not out=="NO_HANDSHAKES": print(f"\n{good} Hashes written to {yellow}{out}{white}\n")
     else: print(f"{bad} You didn't capture any handshakes")
     print(f"{status} Putting {yellow}{adapter}{white} back to managed mode...")
+    if not SNMset:
+        StarsNM = False if input(f"{status} Do you want to start {yellow}NetworkManager{white}? {grey}(Y/n){white}:").lower() in ["n","no"] else True 
     if avahi_runs():nm("stop");wpa("stop");mm(adapter,"managed");nm("start");wpa("start")
     elif Sava and KillAva: avahi("start");mm(adapter,"managed")
     elif StartsNM: mm(adapter,"managed");nm("start");wpa("start")
@@ -243,8 +245,8 @@ def StartListen(adapter):
     print(f"\nGoodbye...");quit()
 
 def handleSysArgs():
-    global outputfile,deauth,Sout,Sdea,Skip,KillAva,KillnmAwpa,Sava,Snmw,StartsNM,interf,AdaSet,ExpSSID,Astart,SSIDZ
-    Sout=True;Sdea=True;Skip=False;KillAva=False;KillnmAwpa=False;Sava=False;Snmw=False;StartsNM=False;AdaSet=False;ExpSSID=False;Astart=False;SSIDZ=True
+    global outputfile,deauth,Sout,Sdea,Skip,KillAva,KillnmAwpa,Sava,Snmw,StartsNM,interf,AdaSet,ExpSSID,Astart,SSIDZ,SNMset
+    Sout=True;Sdea=True;Skip=False;KillAva=False;KillnmAwpa=False;Sava=False;Snmw=False;StartsNM=False;AdaSet=False;ExpSSID=False;Astart=False;SSIDZ=True;SNMset=False
     outputfile = "clean"
     deauth = "--disable_deauthentication"
     interf = ""
@@ -258,7 +260,7 @@ def handleSysArgs():
         elif arg.lower() == "-ka" or arg.lower() == "--kavahi":KillAva=True;Sava=True
         elif arg.lower() == "-kn" or arg.lower() == "--knetworkm":KillnmAwpa=True;Snmw=True
         elif arg.lower() == "-dn" or arg.lower() == "--dknetworkm":KillnmAwpa=False;Snmw=True
-        elif arg.lower() == "-sn" or arg.lower() == "--startnetworkm":StartsNM=True
+        elif arg.lower() == "-sn" or arg.lower() == "--startnetworkm":StartsNM=True;SNMset=True
         elif arg.lower() == "-r" or arg.lower() == "--report":ExpSSID=True;SSIDZ=False
         elif arg.lower() == "-dr" or arg.lower() == "--dontreport":ExpSSID=True;SSIDZ=False
         elif arg.lower() == "-as" or arg.lower() == "--autostart":Astart=True

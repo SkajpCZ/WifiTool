@@ -2,6 +2,12 @@
 This tool is for capturing wifi handshakes and extracting password hashes from them. It is specifically designed for wifi wardriving, this tool makes it easier and quicker to do.
 
 <br>
+
+# Update for v9
+
+#### Fixes
+- NetworkManager starting prompt after collecting hashes
+
 # Update for v8
 
 #### Fixes
