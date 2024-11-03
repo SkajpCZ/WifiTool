@@ -176,7 +176,7 @@ def CleanIt(hashfile, outputfile, adapter):
                 longestI=1;longestR=1
                 for i,j,k in SSIDsW:
                     def isUTF8(string):
-                         try:string.encode('utf-8').decode('utf-8');return True
+                        try:string.encode('utf-8').decode('utf-8');return True
                         except UnicodeDecodeError: return False
                     if not isUTF8(i): i = i.encode('latin1', errors='ignore').hex()
                     if int(len(i))>longestI:longestI=len(i)
